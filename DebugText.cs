@@ -6,11 +6,12 @@ using UnityEngine.UI;
 /// <summary>
 ///  DebugText needs to be attached to a Text GameObject in the scene
 /// </summary>
-public class DebugText : MonoBehaviour {
+public class DebugText : MonoBehaviour
+{
     /// <summary>
     /// The ScrollRect used to manage the individual text message objects.
     /// </summary>
-    public ScrollRect scrollRect;
+    public ScrollRect containerScrollRect;
     /// <summary>
     /// The container of the individual text message objects.
     /// </summary>
@@ -39,6 +40,10 @@ public class DebugText : MonoBehaviour {
     /// Whether or not to stack repeating messages on a single line.
     /// </summary>
     public bool stackRepeatingMessages = true;
+    /// <summary>
+    /// Whether or not to scroll to the bottom when a new message is logged.
+    /// </summary>
+    public bool scrollToBottom = true;
 
     static DebugText instance;
 
@@ -47,14 +52,16 @@ public class DebugText : MonoBehaviour {
     private string lastMessageString = "";
     private int lastMessageCount = 1;
 
-    void Awake() {
+    void Awake()
+    {
         instance = this;
         font = font ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
     }
 
-    GameObject CreateEntry(string entryText, Color entryColor) {
+    private GameObject CreateEntry(string entryText, Color entryColor)
+    {
         GameObject newEntry = new GameObject("LogEntry", typeof(RectTransform), typeof(Text));
-        Text text  = newEntry.GetComponent<Text>();
+        Text text = newEntry.GetComponent<Text>();
         text.text = entryText;
         text.font = font;
         text.color = entryColor;
@@ -64,36 +71,45 @@ public class DebugText : MonoBehaviour {
         return newEntry;
     }
 
-    void _Log(object message, Color entryColor) {
+    private void _Log(object message, Color entryColor)
+    {
         string messageString = message.ToString();
-        if (stackRepeatingMessages && messageString == lastMessageString) {
+
+        if (stackRepeatingMessages && messageString == lastMessageString)
+        {
             lastEntryText.text = "(" + ++lastMessageCount + ") " + messageString;
-        } else {
-            bool atBottom = scrollRect.verticalNormalizedPosition == 0;
+        }
+        else
+        {
             GameObject newEntry = CreateEntry(messageString, entryColor);
             entries.Enqueue(newEntry);
-            if (entries.Count > maxEntryCount) {
+            if (entries.Count > maxEntryCount)
+            {
                 Destroy(entries.Dequeue());
-            }
-            if (atBottom) {
-                StartCoroutine(ScrollToBottom());
             }
 
             lastMessageString = messageString;
             lastMessageCount = 1;
         }
+
+        if (scrollToBottom)
+        {
+            StartCoroutine(ScrollToBottom());
+        }
     }
 
-    IEnumerator ScrollToBottom() {
+    private IEnumerator ScrollToBottom()
+    {
         yield return new WaitForEndOfFrame();
-        scrollRect.verticalNormalizedPosition = 0;
+        containerScrollRect.verticalNormalizedPosition = 0f;
     }
 
     /// <summary>
     /// Use like Debug.Log
     /// </summary>
     /// <param name="message">String or object to be converted to string representation and displayed in the UI Text</param>
-    public static void Log(object message) {
+    public static void Log(object message)
+    {
         if (instance != null)
             instance._Log(message, instance.debugColor);
     }
@@ -102,7 +118,8 @@ public class DebugText : MonoBehaviour {
     /// Use like Debug.LogWarning
     /// </summary>
     /// <param name="message">String or object to be converted to string representation and displayed in the UI Text</param>
-    public static void LogWarning(object message) {
+    public static void LogWarning(object message)
+    {
         if (instance != null)
             instance._Log(message, instance.warningColor);
     }
@@ -111,7 +128,8 @@ public class DebugText : MonoBehaviour {
     /// Use like Debug.LogError
     /// </summary>
     /// <param name="message">String or object to be converted to string representation and displayed in the UI Text</param>
-    public static void LogError(object message) {
+    public static void LogError(object message)
+    {
         if (instance != null)
             instance._Log(message, instance.errorColor);
     }
@@ -119,7 +137,8 @@ public class DebugText : MonoBehaviour {
     /// <summary>
     /// Clear the current message history.
     /// </summary>
-    public void Clear() {
+    public void Clear()
+    {
         foreach (var entry in entries)
         {
             Destroy(entry);
